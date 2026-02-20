@@ -1,0 +1,10 @@
+node_modules/
+.env
+session/
+auth_info_baileys/
+baileys_store.json
+message_backup.json
+error_counter.json
+asset/temp/
+*.log
+.cache/
