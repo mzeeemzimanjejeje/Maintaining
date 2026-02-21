@@ -545,7 +545,7 @@ async function startXeonBotInc() {
 
     const XeonBotInc = makeWASocket({
         version,
-        logger: pino({ level: 'silent' }),
+        logger: pino({ level: 'warn' }),
         printQRInTerminal: false, 
         browser: ["Ubuntu", "Chrome", "20.0.04"],
         auth: {
@@ -573,6 +573,7 @@ async function startXeonBotInc() {
     const botStartTimestamp = Math.floor(Date.now() / 1000);
 
     XeonBotInc.ev.process(async (events) => {
+
         if (events['group-participants.update']) {
             const anu = events['group-participants.update'];
             try {
