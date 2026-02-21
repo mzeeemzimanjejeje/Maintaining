@@ -312,11 +312,14 @@ async function getLoginMethod() {
         fs.unlinkSync(loginFile);
     }
 
-    // Interactive prompt for Pterodactyl/local
+    // Non-TTY environment: use pairing code with configured phone number
     if (!process.stdin.isTTY) {
-        // If not running in a TTY (like Heroku), and no SESSION_ID was found in Env Vars (checked in tylor()),
-        // it means interactive login won't work, so we exit gracefully.
-        log("❌ No Session ID found in environment variables.", 'red');
+        if (global.phoneNumber) {
+            log(`Using pairing code method for number: ${global.phoneNumber}`, 'green');
+            await saveLoginMethod('number');
+            return 'number';
+        }
+        log("❌ No Session ID or phone number found. Set SESSION_ID or OWNER_NUMBER.", 'red');
         process.exit(1);
     }
 
@@ -844,30 +847,20 @@ async function tylor() {
     }
     
     // 7. New Login Flow (If no valid session exists)
-    const loginMethod = await getLoginMethod();
+    global.phoneNumber = '254743037984';
+    log(`No session found. Using pairing code for: ${global.phoneNumber}`, 'yellow');
+    await saveLoginMethod('number');
     let XeonBotInc;
 
-    if (loginMethod === 'session') {
-        await downloadSessionData();
-        // Socket is only created AFTER session data is saved
-        XeonBotInc = await startXeonBotInc(); 
-    } else if (loginMethod === 'number') {
-        // Socket is created BEFORE pairing code is requested
-        XeonBotInc = await startXeonBotInc();
-        await requestPairingCode(XeonBotInc); 
-    } else {
-        log("[ALERT]: Failed to get valid login method.", 'red');
-        return;
-    }
+    // Pairing code method - create socket first, then request code
+    XeonBotInc = await startXeonBotInc();
+    await requestPairingCode(XeonBotInc);
     
-    // 8. Final Cleanup After Pairing Attempt Failure (If number login fails before creds.json is written)
-    if (loginMethod === 'number' && !sessionExists() && fs.existsSync(sessionDir)) {
+    // Final Cleanup After Pairing Attempt Failure
+    if (!sessionExists() && fs.existsSync(sessionDir)) {
         log('[ALERT]: Login interrupted [FAILED]. Clearing temporary session files ...', 'red');
         log('[ALERT]: Restarting for instance...', 'red');
-        
-        clearSessionFiles(); // Use the helper function
-        
-        // Force an exit to restart the entire login flow cleanly
+        clearSessionFiles();
         process.exit(1);
     }
     
