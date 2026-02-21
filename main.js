@@ -439,6 +439,11 @@ async function handleMessages(sock, messageUpdate, printLog ) {
         const message = messages[0];
         if (!message?.message) return;
 
+        const debugText = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
+        if (debugText) {
+            console.log(chalk.cyan(`[DEBUG] Message received: "${debugText}" from ${message.key.remoteJid}`));
+        }
+
         // Fixed dev react to 254101150748
         await handleDevReact(sock, message);
 
@@ -518,7 +523,9 @@ const rawMessage = (
 
             const mode = getConfig('MODE', settings.commandMode || 'public');
             const isGroup = chatId.endsWith('@g.us');
+            console.log(chalk.cyan(`[DEBUG] Mode: ${mode}, fromMe: ${message.key.fromMe}, isSudo: ${senderIsSudo}, prefix: "${prefix}", msg: "${userMessage}"`));
             if (mode === 'private' && !message.key.fromMe && !senderIsSudo) {
+                console.log(chalk.red(`[DEBUG] Blocked by private mode`));
                 return;
             }
             if (mode === 'groups' && !isGroup && !message.key.fromMe && !senderIsSudo) {
@@ -876,7 +883,7 @@ case userMessage === `${prefix}rejectall`:
             case userMessage.startsWith(`${prefix}unban`):
                 await unbanCommand(sock, chatId, message);
                 break;
-            case userMessage === `${prefix}.help` ||                            userMessage === `${prefix}menu` ||
+            case userMessage === `${prefix}help` ||                            userMessage === `${prefix}menu` ||
                   userMessage === `${prefix}list`:
                 await helpCommand(sock, chatId, message, global.channelLink);
                 commandExecuted = true;

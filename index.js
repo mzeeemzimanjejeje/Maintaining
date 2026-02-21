@@ -615,12 +615,15 @@ async function startXeonBotInc() {
         if (!mek.message) return;
 
         const msgTimestamp = typeof mek.messageTimestamp === 'object' ? mek.messageTimestamp.low : Number(mek.messageTimestamp);
-        if (msgTimestamp && msgTimestamp < botStartTimestamp - 10) return;
+        if (msgTimestamp && msgTimestamp < botStartTimestamp - 10) {
+            console.log(chalk.gray(`[DEBUG] Skipping old message (timestamp: ${msgTimestamp}, botStart: ${botStartTimestamp})`));
+            return;
+        }
 
         mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message;
         // This relies on handleStatus and handleMessages being loaded
         if (mek.key.remoteJid === 'status@broadcast') { await handleStatus(XeonBotInc, chatUpdate); return; }
-        try { await handleMessages(XeonBotInc, chatUpdate, true) } catch(e){ log(e.message, 'red', true) }
+        try { await handleMessages(XeonBotInc, chatUpdate, true) } catch(e){ console.error(chalk.red(`[ERROR] handleMessages error:`), e); log(e.message, 'red', true) }
     });
 
 
