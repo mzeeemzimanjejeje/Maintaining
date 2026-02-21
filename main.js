@@ -494,22 +494,22 @@ const rawMessage = (
 
         if (userMessage && userMessage.startsWith(prefix)) {
             const commandStartTime = Date.now();
-            console.log(chalk.bgHex('#121212').cyan(`
-╭═════════ 〔 TRUTH-MD 〕══════❐
-  ➽ Sent Time: ${time}
-  ➽ Sender: ${pushname}
-  ➽ Type: ${chatType}
-┃ ➽ Message: ${body || "—"}
-╰═══════════════════════════❐
-☆ 《 TRUTH-MD 》☆
-`));
+            const topBar = chalk.red('━━━━━━━━━━') + chalk.yellow(' 『 ') + chalk.green('TRUTH-MD') + chalk.yellow(' 』 ') + chalk.blue('━━━━━━━━━━') + chalk.green('━━━━━━');
+            const bottomBar = chalk.yellow('━━━━━') + chalk.red('━━━━━━━') + chalk.magenta('━━━━━━━━━━━━━') + chalk.green('━━━━━━━━') + chalk.cyan(' ~~');
+            console.log(topBar);
+            console.log(chalk.yellow('»') + chalk.cyan(` Source: command`));
+            console.log(chalk.yellow('»') + chalk.green(` Sender: ${pushname}`));
+            console.log(chalk.yellow('»') + chalk.yellow(` Message Time: ${time}`));
+            console.log(chalk.yellow('»') + chalk.magenta(` Message Type: ${chatType}`));
+            console.log(chalk.yellow('»') + chalk.blue(` Chat ID: ${chatId}`));
+            console.log(chalk.yellow('»') + chalk.red(` Message: ${body || "—"}`));
+            console.log(bottomBar);
 
-            // Wrap the command execution logic to calculate speed
             const originalSendMessage = sock.sendMessage;
             sock.sendMessage = async function(...args) {
                 const responseTime = Date.now() - commandStartTime;
                 console.log(chalk.green(`[SPEED] Bot response speed: ${responseTime}ms`));
-                sock.sendMessage = originalSendMessage; // Reset after first response
+                sock.sendMessage = originalSendMessage;
                 return originalSendMessage.apply(this, args);
             };
         }

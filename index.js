@@ -664,9 +664,14 @@ async function startXeonBotInc() {
                 startXeonBotInc(); 
             }
         } else if (connection === 'open') {           
-            console.log(chalk.yellow(`💅Connected to => ` + JSON.stringify(XeonBotInc.user, null, 2)))
-            log('TRUTH-MD Connected', 'yellow');      
-            log(`Github: courtney250`, 'yellow');
+            const connTopBar = chalk.red('━━━━━━━━━━') + chalk.yellow(' 『 ') + chalk.green('TRUTH-MD') + chalk.yellow(' 』 ') + chalk.blue('━━━━━━━━━━') + chalk.green('━━━━━━');
+            const connBottomBar = chalk.yellow('━━━━━') + chalk.red('━━━━━━━') + chalk.magenta('━━━━━━━━━━━━━') + chalk.green('━━━━━━━━') + chalk.cyan(' ~~');
+            console.log(connTopBar);
+            console.log(chalk.yellow('»') + chalk.cyan(` Status: Connected`));
+            console.log(chalk.yellow('»') + chalk.green(` User: ${JSON.stringify(XeonBotInc.user?.id || 'N/A')}`));
+            console.log(chalk.yellow('»') + chalk.yellow(` Bot: TRUTH-MD`));
+            console.log(chalk.yellow('»') + chalk.magenta(` Github: courtney250`));
+            console.log(connBottomBar);
             try {
                 const { updateLidMap } = require('./lib/index');
                 if (XeonBotInc.user && XeonBotInc.user.id && XeonBotInc.user.lid) {
