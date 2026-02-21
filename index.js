@@ -904,6 +904,16 @@ async function tylor() {
     checkEnvStatus(); // <--- START .env FILE WATCHER (Mandatory)
 }
 
+// --- Health Check Server for Deployment ---
+const http = require('http');
+const HEALTH_PORT = process.env.PORT || 8080;
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', bot: 'TRUTH-MD', connected: global.isBotConnected }));
+}).listen(HEALTH_PORT, '0.0.0.0', () => {
+    log(`Health check server running on port ${HEALTH_PORT}`, 'cyan');
+});
+
 // --- Start bot (TRUTH MD) ---
 tylor().catch(err => log(`Fatal error starting bot: ${err.message}`, 'red', true));
 process.on('uncaughtException', (err) => log(`Uncaught Exception: ${err.message}`, 'red', true));
