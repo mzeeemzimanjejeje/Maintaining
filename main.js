@@ -721,26 +721,6 @@ const rawMessage = (
     break;
 }
 //_________________________________________
-
-  if (!userMessage.startsWith(prefix)) {
-    // Typing indicator
-    await handleAutotypingForMessage(sock, chatId, userMessage);
-
-    // 🔥 CHATBOT AUTO RESPONSE (PRIVATE CHATS ONLY)
-    await handleChatbotResponse(
-        sock,
-        chatId,
-        message,
-        rawText,     // keep original text
-        senderId
-    );
-
-    if (isGroup) {
-        await handleTagDetection(sock, chatId, message, senderId);
-        await handleMentionDetection(sock, chatId, message);
-    }
-    return;
-}                        
                         
                               //set owner  
               
