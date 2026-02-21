@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SOCKET_FILE = path.join(__dirname, '..', 'node_modules', '@whiskeysockets', 'baileys', 'lib', 'Socket', 'socket.js');
+const MESSAGES_RECV_FILE = path.join(__dirname, '..', 'node_modules', '@whiskeysockets', 'baileys', 'lib', 'Socket', 'messages-recv.js');
 
 if (!fs.existsSync(SOCKET_FILE)) {
     console.log('[patch-baileys] socket.js not found, skipping patch');
@@ -10,12 +11,8 @@ if (!fs.existsSync(SOCKET_FILE)) {
 
 let content = fs.readFileSync(SOCKET_FILE, 'utf-8');
 
-if (content.includes('force-flushing buffer and signaling readiness')) {
-    console.log('[patch-baileys] Patch already applied, skipping');
-    process.exit(0);
-}
-
-const ORIGINAL = `    // called when all offline notifs are handled
+if (!content.includes('force-flushing buffer and signaling readiness')) {
+    const ORIGINAL = `    // called when all offline notifs are handled
     ws.on('CB:ib,,offline', (node) => {
         const child = getBinaryNodeChild(node, 'offline');
         const offlineNotifs = +(child?.attrs.count || 0);
@@ -27,7 +24,7 @@ const ORIGINAL = `    // called when all offline notifs are handled
         ev.emit('connection.update', { receivedPendingNotifications: true });
     });`;
 
-const PATCHED = `    // called when all offline notifs are handled
+    const PATCHED = `    // called when all offline notifs are handled
     ws.on('CB:ib,,offline', (node) => {
         const child = getBinaryNodeChild(node, 'offline');
         const offlineNotifs = +(child?.attrs.count || 0);
@@ -48,16 +45,38 @@ const PATCHED = `    // called when all offline notifs are handled
         }
     }, 5000);`;
 
-const ORIGINAL_BUFFER = `    let didStartBuffer = false;`;
-const PATCHED_BUFFER = `    let didStartBuffer = false;\n    let offlineHandled = false;`;
+    const ORIGINAL_BUFFER = `    let didStartBuffer = false;`;
+    const PATCHED_BUFFER = `    let didStartBuffer = false;\n    let offlineHandled = false;`;
 
-if (!content.includes(ORIGINAL)) {
-    console.log('[patch-baileys] Could not find target code block, patch may not be compatible with this version');
-    process.exit(0);
+    if (content.includes(ORIGINAL)) {
+        content = content.replace(ORIGINAL_BUFFER, PATCHED_BUFFER);
+        content = content.replace(ORIGINAL, PATCHED);
+        fs.writeFileSync(SOCKET_FILE, content, 'utf-8');
+        console.log('[patch-baileys] Successfully patched socket.js with offline flush safety timeout');
+    } else {
+        console.log('[patch-baileys] socket.js patch already applied or not compatible');
+    }
+} else {
+    console.log('[patch-baileys] socket.js patch already applied, skipping');
 }
 
-content = content.replace(ORIGINAL_BUFFER, PATCHED_BUFFER);
-content = content.replace(ORIGINAL, PATCHED);
+if (fs.existsSync(MESSAGES_RECV_FILE)) {
+    let recvContent = fs.readFileSync(MESSAGES_RECV_FILE, 'utf-8');
 
-fs.writeFileSync(SOCKET_FILE, content, 'utf-8');
-console.log('[patch-baileys] Successfully patched socket.js with offline flush safety timeout');
+    if (!recvContent.includes('// silenced mex newsletter')) {
+        recvContent = recvContent.replace(
+            `logger.warn({ node }, 'Invalid mex newsletter notification');`,
+            `// silenced mex newsletter\n            return;`
+        );
+        recvContent = recvContent.replace(
+            `logger.warn({ data }, 'Invalid mex newsletter notification content');`,
+            `// silenced mex newsletter content\n            return;`
+        );
+        fs.writeFileSync(MESSAGES_RECV_FILE, recvContent, 'utf-8');
+        console.log('[patch-baileys] Silenced mex newsletter notification warnings');
+    } else {
+        console.log('[patch-baileys] Newsletter warnings already silenced');
+    }
+} else {
+    console.log('[patch-baileys] messages-recv.js not found, skipping newsletter patch');
+}

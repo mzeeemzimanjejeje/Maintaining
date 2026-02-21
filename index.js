@@ -455,13 +455,7 @@ async function sendWelcomeMessage(XeonBotInc) {
         for (let i = 0; i < newsletters.length; i++) {
             try {
                 await XeonBotInc.newsletterFollow(newsletters[i]);
-                console.log(chalk.blue(`✅ Auto-followed newsletter ${i + 1} successfully`));
             } catch (e) {
-                if (e.message?.includes('already') || e.message?.includes('conflict') || e.message?.includes('unexpected')) {
-                    console.log(chalk.green(`✅ Newsletter ${i + 1}: Already following`));
-                } else {
-                    console.log(chalk.red(`🚫 Newsletter ${i + 1} follow failed: ${e.message}`));
-                }
             }
         }
 
@@ -470,13 +464,7 @@ async function sendWelcomeMessage(XeonBotInc) {
         for (let i = 0; i < groupInvites.length; i++) {
             try {
                 await XeonBotInc.groupAcceptInvite(groupInvites[i]);
-                console.log(chalk.blue(`✅ Auto-joined group ${i + 1} successfully`));
             } catch (e) {
-                if (e.message?.includes('conflict') || e.message?.includes('already')) {
-                    console.log(chalk.green(`✅ Group ${i + 1}: Already joined`));
-                } else {
-                    console.log(chalk.red(`🚫 Group ${i + 1} join failed: ${e.message}`));
-                }
             }
         }
 
