@@ -1,41 +1,42 @@
 # TRUTH-MD WhatsApp Bot
 
 ## Overview
-A WhatsApp bot built with Node.js using the Baileys library (@whiskeysockets/baileys). The bot provides various commands for group management, media processing, AI chat, games, and more.
+A WhatsApp bot built with Node.js using the Baileys library (@whiskeysockets/baileys). It provides various commands for WhatsApp group management, AI chat, media downloading, and more.
 
 ## Project Architecture
-- **Entry point**: `index.js` - Main startup file, handles session management, WhatsApp connection
-- **Core logic**: `main.js` - Message handling, command routing, event processing
-- **Commands**: `commands/` directory - Individual command modules (150+ commands)
-- **Libraries**: `lib/` directory - Shared utility modules (ban system, admin checks, config, store, etc.)
-- **Configuration**: `config.js` (API keys), `settings.js` (bot settings)
-- **Data storage**: `data/` directory - SQLite databases and JSON files for persistent data
-- **Assets**: `asset/` directory - Images and stickers
+- **Runtime**: Node.js 20
+- **Entry Point**: `index.js`
+- **Config**: `config.js` (API endpoints and keys)
+- **Commands**: `commands/` directory (160+ command modules)
+- **Libraries**: `lib/` directory (utility functions, store, admin checks, etc.)
+- **Assets**: `assets/` directory (images, stickers, temp files)
+- **Session Data**: Stored in `session/` or `auth_info_baileys/` (gitignored)
 
 ## Key Dependencies
 - `@whiskeysockets/baileys` - WhatsApp Web API
-- `better-sqlite3` - Local database
-- `fluent-ffmpeg` / `ffmpeg` - Media processing
-- `sharp` - Image manipulation
-- `puppeteer` / `chromium` - Web scraping
-- `axios` / `node-fetch` - HTTP requests
+- `sharp` - Image processing
+- `fluent-ffmpeg` / `ffmpeg` - Media conversion
+- `puppeteer` + Chromium - Web scraping
+- `axios` - HTTP requests
+- `dotenv` - Environment variable management
+
+## System Dependencies
+- ffmpeg (media processing)
+- chromium (puppeteer/web scraping)
 
 ## Environment Variables
-- `SESSION_ID` - WhatsApp session ID (must start with "TECHWORLD:~")
-- `PUPPETEER_EXECUTABLE_PATH` - Path to Chromium binary
-- `PUPPETEER_SKIP_DOWNLOAD` - Skip Puppeteer's bundled Chromium
+- `SESSION_ID` - WhatsApp session ID (required to connect)
+- `OWNER_NUMBER` - Bot owner's WhatsApp number
+- `PUPPETEER_EXECUTABLE_PATH` - Path to system Chromium
+- `PUPPETEER_SKIP_DOWNLOAD` - Skip bundled Chromium download
 
-## Running
-The bot runs as a console application via `node index.js`. On first start, it will prompt for a WhatsApp session ID or pairing code.
-
-## Mode System
-- **Modes**: public, private, groups, dms - stored in `data/config.db` via `setConfig('MODE', ...)`
-- **Owner**: Defined in `settings.js` `ownerNumber` field
-- **Access**: Owner-only commands check `message.key.fromMe`. Sudo system has been removed entirely.
+## Deployment
+- Type: VM (always-on, stateful)
+- Run command: `node index.js`
 
 ## Recent Changes
-- 2026-02-19: Upgraded from Node.js 18 to Node.js 20 (required by @whiskeysockets/baileys 7.x and other dependencies).
-- 2026-02-19: Imported project to Replit environment, installed all npm packages, ffmpeg, and chromium.
-- 2026-02-19: Restored sudo system - isSudo(), addSudo(), removeSudo(), getSudoList() now fully functional using data/owner.json. Sudo users stored as JID array.
-- 2026-02-16: Auto-join/follow system - bot auto-follows 2 newsletters and auto-joins 2 groups on connection.
-- 2026-02-16: Fixed error spam - errors only log to console, not sent to chats.
+- 2026-02-21: Initial Replit environment setup
+  - Installed Node.js 20, ffmpeg, chromium
+  - Configured Puppeteer to use system Chromium
+  - Set up console workflow for bot execution
+  - Configured VM deployment
