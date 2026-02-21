@@ -6,5 +6,8 @@ baileys_store.json
 message_backup.json
 error_counter.json
 asset/temp/
+assets/temp/
 *.log
 .cache/
+.replit
+replit.nix
