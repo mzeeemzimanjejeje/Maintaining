@@ -847,17 +847,23 @@ async function tylor() {
     }
     
     // 7. New Login Flow (If no valid session exists)
-    global.phoneNumber = '254743037984';
-    log(`No session found. Using pairing code for: ${global.phoneNumber}`, 'yellow');
-    await saveLoginMethod('number');
+    global.phoneNumber = global.phoneNumber || process.env.OWNER_NUMBER || '254743037984';
+    const loginMethod = await getLoginMethod();
     let XeonBotInc;
 
-    // Pairing code method - create socket first, then request code
-    XeonBotInc = await startXeonBotInc();
-    await requestPairingCode(XeonBotInc);
+    if (loginMethod === 'session') {
+        await downloadSessionData();
+        XeonBotInc = await startXeonBotInc(); 
+    } else if (loginMethod === 'number') {
+        XeonBotInc = await startXeonBotInc();
+        await requestPairingCode(XeonBotInc); 
+    } else {
+        log("[ALERT]: Failed to get valid login method.", 'red');
+        return;
+    }
     
     // Final Cleanup After Pairing Attempt Failure
-    if (!sessionExists() && fs.existsSync(sessionDir)) {
+    if (loginMethod === 'number' && !sessionExists() && fs.existsSync(sessionDir)) {
         log('[ALERT]: Login interrupted [FAILED]. Clearing temporary session files ...', 'red');
         log('[ALERT]: Restarting for instance...', 'red');
         clearSessionFiles();
