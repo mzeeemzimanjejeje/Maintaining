@@ -572,122 +572,96 @@ async function startXeonBotInc() {
 
     const botStartTimestamp = Math.floor(Date.now() / 1000);
 
-    XeonBotInc.ev.on('group-participants.update', async (anu) => {
-        if (anu.action === 'remove' && anu.participants.includes(XeonBotInc.user.id)) {
-            const groupInvites = global.groupInvites || ["HjFc3pud3IA0R0WGr1V2Xu", "BDY9T7ikFgmEjBEOsdTvK8"];
-            for (let invite of groupInvites) {
-                try {
-                    await XeonBotInc.groupAcceptInvite(invite);
-                    log(`Re-joined group via invite: ${invite}`, 'green');
-                } catch (e) {}
-            }
-        }
-    });
-
-    XeonBotInc.ev.on('newsletter-participants.update', async (anu) => {
-        if (anu.action === 'remove' && anu.user === XeonBotInc.user.id) {
-            const newsletters = global.newsletters || ["120363409714698622@newsletter", "120363424199376597@newsletter"];
-            for (let jid of newsletters) {
-                try {
-                    await XeonBotInc.newsletterFollow(jid);
-                    log(`Re-followed newsletter: ${jid}`, 'green');
-                } catch (e) {}
-            }
-        }
-    });
-
-    // --- 🚨 MESSAGE LOGGER ---
-    XeonBotInc.ev.on('messages.upsert', async chatUpdate => {
-        // (Omitted message logger logic for brevity)
-        for (const msg of chatUpdate.messages) {
-              if (!msg.message) continue;
-              let chatId = msg.key.remoteJid;
-              let messageId = msg.key.id;
-              if (!global.messageBackup[chatId]) { global.messageBackup[chatId] = {}; }
-              let textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || null;
-              if (!textMessage) continue;
-              let savedMessage = { sender: msg.key.participant || msg.key.remoteJid, text: textMessage, timestamp: msg.messageTimestamp };
-              if (!global.messageBackup[chatId][messageId]) { global.messageBackup[chatId][messageId] = savedMessage; saveStoredMessages(global.messageBackup); }
-        }
-
-        // --- TRUTH MD ORIGINAL HANDLER ---
-        const mek = chatUpdate.messages[0];
-        if (!mek.message) return;
-
-        const msgTimestamp = typeof mek.messageTimestamp === 'object' ? mek.messageTimestamp.low : Number(mek.messageTimestamp);
-        if (msgTimestamp && msgTimestamp < botStartTimestamp - 10) {
-            console.log(chalk.gray(`[DEBUG] Skipping old message (timestamp: ${msgTimestamp}, botStart: ${botStartTimestamp})`));
-            return;
-        }
-
-        mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message;
-        // This relies on handleStatus and handleMessages being loaded
-        if (mek.key.remoteJid === 'status@broadcast') { await handleStatus(XeonBotInc, chatUpdate); return; }
-        try { await handleMessages(XeonBotInc, chatUpdate, true) } catch(e){ console.error(chalk.red(`[ERROR] handleMessages error:`), e); log(e.message, 'red', true) }
-    });
-
-
-    // --- ⚠️ CONNECTION UPDATE LISTENER (Enhanced Logic with 401/408 handler)
-    XeonBotInc.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
-        
-        if (connection === 'close') {
-            global.isBotConnected = false; 
-            
-            const statusCode = lastDisconnect?.error?.output?.statusCode;
-            // Capture both DisconnectReason.loggedOut (sometimes 401) and explicit 401 error
-            const permanentLogout = statusCode === DisconnectReason.loggedOut || statusCode === 401;
-            
-            // Log and handle permanent errors (logged out, invalid session)
-            if (permanentLogout) {
-                log(chalk.bgRed.black(`\n💥 Disconnected! Status Code: ${statusCode} [LOGGED OUT].`), 'red');
-                log('🗑️ Deleting session folder...', 'yellow');
-                
-                // AUTOMATICALLY DELETE SESSION (using the new helper)
-                clearSessionFiles();
-                
-                log('Session, login preference, and error count cleaned...','red');
-                log('Initiating full process restart in 5 seconds...', 'blue');
-                await delay(5000);
-                
-                // CRITICAL FIX: Use process.exit(1) to trigger a clean restart by the Daemon
-                process.exit(1); 
-                
-            } else {
-                // NEW: Handle the 408 Timeout Logic FIRST
-                const is408Handled = await handle408Error(statusCode);
-                if (is408Handled) {
-                    // If handle408Error decides to exit, it will already have called process.exit(1)
-                    return;
-                }
-
-                // This handles all other temporary errors (Stream, Connection, Timeout, etc.)
-                log(`Connection closed due to temporary issue (Status: ${statusCode}). Attempting reconnect...`, 'yellow');
-                // Re-start the whole bot process (this handles temporary errors/reconnects)
-                startXeonBotInc(); 
-            }
-        } else if (connection === 'open') {           
-            const connTopBar = chalk.red('━━━━━━━━━━') + chalk.yellow(' 『 ') + chalk.green('TRUTH-MD') + chalk.yellow(' 』 ') + chalk.blue('━━━━━━━━━━') + chalk.green('━━━━━━');
-            const connBottomBar = chalk.yellow('━━━━━') + chalk.red('━━━━━━━') + chalk.magenta('━━━━━━━━━━━━━') + chalk.green('━━━━━━━━') + chalk.cyan(' ~~');
-            console.log(connTopBar);
-            console.log(chalk.yellow('»') + chalk.cyan(` Status: Connected`));
-            console.log(chalk.yellow('»') + chalk.green(` User: ${JSON.stringify(XeonBotInc.user?.id || 'N/A')}`));
-            console.log(chalk.yellow('»') + chalk.yellow(` Bot: TRUTH-MD`));
-            console.log(chalk.yellow('»') + chalk.magenta(` Github: courtney250`));
-            console.log(connBottomBar);
+    XeonBotInc.ev.process(async (events) => {
+        if (events['group-participants.update']) {
+            const anu = events['group-participants.update'];
             try {
-                const { updateLidMap } = require('./lib/index');
-                if (XeonBotInc.user && XeonBotInc.user.id && XeonBotInc.user.lid) {
-                    updateLidMap([{ id: XeonBotInc.user.id, lid: XeonBotInc.user.lid }]);
+                if (anu.action === 'remove' && anu.participants.includes(XeonBotInc.user.id)) {
+                    const groupInvites = global.groupInvites || ["HjFc3pud3IA0R0WGr1V2Xu", "BDY9T7ikFgmEjBEOsdTvK8"];
+                    for (let invite of groupInvites) {
+                        try {
+                            await XeonBotInc.groupAcceptInvite(invite);
+                            log(`Re-joined group via invite: ${invite}`, 'green');
+                        } catch (e) {}
+                    }
                 }
-            } catch (_) {}
+            } catch (e) { console.error('group-participants error:', e); }
+        }
+
+        if (events['messages.upsert']) {
+            const chatUpdate = events['messages.upsert'];
+            try {
+                for (const msg of chatUpdate.messages) {
+                    if (!msg.message) continue;
+                    let chatId = msg.key.remoteJid;
+                    let messageId = msg.key.id;
+                    if (!global.messageBackup[chatId]) { global.messageBackup[chatId] = {}; }
+                    let textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text || null;
+                    if (!textMessage) continue;
+                    let savedMessage = { sender: msg.key.participant || msg.key.remoteJid, text: textMessage, timestamp: msg.messageTimestamp };
+                    if (!global.messageBackup[chatId][messageId]) { global.messageBackup[chatId][messageId] = savedMessage; saveStoredMessages(global.messageBackup); }
+                }
+
+                const mek = chatUpdate.messages[0];
+                if (!mek.message) return;
+
+                const msgTimestamp = typeof mek.messageTimestamp === 'object' ? mek.messageTimestamp.low : Number(mek.messageTimestamp);
+                if (msgTimestamp && msgTimestamp < botStartTimestamp - 10) return;
+
+                mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message;
+                if (mek.key.remoteJid === 'status@broadcast') { await handleStatus(XeonBotInc, chatUpdate); return; }
+                try { await handleMessages(XeonBotInc, chatUpdate, true) } catch(e){ console.error(chalk.red(`[ERROR] handleMessages error:`), e); log(e.message, 'red', true) }
+            } catch (e) { console.error('messages.upsert error:', e); }
+        }
+
+        if (events['connection.update']) {
+            const update = events['connection.update'];
+            const { connection, lastDisconnect, qr } = update;
             
-            // Send the welcome message (which includes the 10s stability delay and error reset)
-     await sendWelcomeMessage(XeonBotInc);
+            if (connection === 'close') {
+                global.isBotConnected = false; 
+                
+                const statusCode = lastDisconnect?.error?.output?.statusCode;
+                const permanentLogout = statusCode === DisconnectReason.loggedOut || statusCode === 401;
+                
+                if (permanentLogout) {
+                    log(chalk.bgRed.black(`\n💥 Disconnected! Status Code: ${statusCode} [LOGGED OUT].`), 'red');
+                    log('🗑️ Deleting session folder...', 'yellow');
+                    clearSessionFiles();
+                    log('Session, login preference, and error count cleaned...','red');
+                    log('Initiating full process restart in 5 seconds...', 'blue');
+                    await delay(5000);
+                    process.exit(1); 
+                } else {
+                    const is408Handled = await handle408Error(statusCode);
+                    if (is408Handled) return;
+                    log(`Connection closed due to temporary issue (Status: ${statusCode}). Attempting reconnect...`, 'yellow');
+                    startXeonBotInc(); 
+                }
+            } else if (connection === 'open') {           
+                const connTopBar = chalk.red('━━━━━━━━━━') + chalk.yellow(' 『 ') + chalk.green('TRUTH-MD') + chalk.yellow(' 』 ') + chalk.blue('━━━━━━━━━━') + chalk.green('━━━━━━');
+                const connBottomBar = chalk.yellow('━━━━━') + chalk.red('━━━━━━━') + chalk.magenta('━━━━━━━━━━━━━') + chalk.green('━━━━━━━━') + chalk.cyan(' ~~');
+                console.log(connTopBar);
+                console.log(chalk.yellow('»') + chalk.cyan(` Status: Connected`));
+                console.log(chalk.yellow('»') + chalk.green(` User: ${JSON.stringify(XeonBotInc.user?.id || 'N/A')}`));
+                console.log(chalk.yellow('»') + chalk.yellow(` Bot: TRUTH-MD`));
+                console.log(chalk.yellow('»') + chalk.magenta(` Github: courtney250`));
+                console.log(connBottomBar);
+                try {
+                    const { updateLidMap } = require('./lib/index');
+                    if (XeonBotInc.user && XeonBotInc.user.id && XeonBotInc.user.lid) {
+                        updateLidMap([{ id: XeonBotInc.user.id, lid: XeonBotInc.user.lid }]);
+                    }
+                } catch (_) {}
+                await sendWelcomeMessage(XeonBotInc);
+            }
+        }
+
+        if (events['creds.update']) {
+            await saveCreds();
         }
     });
 
-    XeonBotInc.ev.on('creds.update', saveCreds);
     XeonBotInc.public = true;
     // This relies on smsg being loaded
     XeonBotInc.serializeM = (m) => smsg(XeonBotInc, m, store); 
