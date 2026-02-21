@@ -533,7 +533,7 @@ async function startXeonBotInc() {
 
     const XeonBotInc = makeWASocket({
         version,
-        logger: pino({ level: 'error' }),
+        logger: pino({ level: 'silent' }),
         printQRInTerminal: false, 
         browser: ["Ubuntu", "Chrome", "20.0.04"],
         auth: {

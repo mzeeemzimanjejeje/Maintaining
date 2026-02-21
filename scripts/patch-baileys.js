@@ -80,3 +80,26 @@ if (fs.existsSync(MESSAGES_RECV_FILE)) {
 } else {
     console.log('[patch-baileys] messages-recv.js not found, skipping newsletter patch');
 }
+
+const SESSION_CIPHER_FILE = path.join(__dirname, '..', 'node_modules', '@whiskeysockets', 'baileys', 'node_modules', 'libsignal', 'src', 'session_cipher.js');
+
+if (fs.existsSync(SESSION_CIPHER_FILE)) {
+    let cipherContent = fs.readFileSync(SESSION_CIPHER_FILE, 'utf-8');
+
+    if (!cipherContent.includes('// silenced decrypt errors')) {
+        cipherContent = cipherContent.replace(
+            `console.error("Failed to decrypt message with any known session...");`,
+            `// silenced decrypt errors`
+        );
+        cipherContent = cipherContent.replace(
+            `console.error("Session error:" + e, e.stack);`,
+            `// silenced session error log`
+        );
+        fs.writeFileSync(SESSION_CIPHER_FILE, cipherContent, 'utf-8');
+        console.log('[patch-baileys] Silenced libsignal decrypt error console logs');
+    } else {
+        console.log('[patch-baileys] libsignal decrypt errors already silenced');
+    }
+} else {
+    console.log('[patch-baileys] session_cipher.js not found, skipping patch');
+}
